@@ -14,10 +14,10 @@ const Footer = () => {
             Gaurav Choudhary (22BIT0375)
           </p>
           <p className="font-playfair font-semibold text-xl text-white">
-            Kshtiz Kumar Chauhan (22BIT0425)
+            Kshitiz Chauhan (22BIT0425)
           </p>
           <p className="font-playfair font-semibold text-xl text-white">
-            Tanushika Saxena (22BIT0447)
+            Tanushikha Saxena (22BIT0447)
           </p>
         </div>
     
