@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
 const ModelPage = () => {
   const [loading, setLoading] = useState(true);
@@ -10,7 +11,7 @@ const ModelPage = () => {
   return (
     <section
       id="projects"
-      className="h-[40vh] pt-24 lg:w-2/3 md:w-[80%] w-2/3 mx-auto"
+      className="h-[60vh] pt-24 lg:w-2/3 md:w-[80%] w-2/3 mx-auto"
     >
       {/* HEADINGS */}
       <motion.div
@@ -34,25 +35,15 @@ const ModelPage = () => {
         </p>
       </motion.div>
 
-      <div className="w-full mt-10 flex justify-center items-center ">
-       
+      <div className="w-full mt-10 flex justify-center items-center">
+        <Link to="/modelPage">
           <button
-            type="submit"
-            className="px-3 py-2 m-10 rounded border-2 shadow-md shadow-black"
+            type="button"
+            className="px-3 py-2 m-10 rounded border-2 text-black bg-[#e0e0e0] font-bold shadow-md shadow-black transition-transform transform active:scale-95"
           >
-            Submit
+            Go to Model Page
           </button>
-      
-      </div>
-      <div className="image-container">
-        {loading && <div className="loader"></div>}
-        <img
-          src="https://footware0711.s3.amazonaws.com/sarima_predictions_vs_actual1.png"
-          alt="Loaded content"
-          className="w-[80vw]"
-          onLoad={handleImageLoad}
-          style={{ display: loading ? "none" : "block" }}
-        />
+        </Link>
       </div>
     </section>
   );

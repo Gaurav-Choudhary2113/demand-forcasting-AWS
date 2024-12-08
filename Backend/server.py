@@ -1,76 +1,74 @@
-from flask import Flask, send_from_directory, request, jsonify
-from datetime import datetime
-from PIL import Image
-from pathlib import Path
-import numpy as np
+from flask import Flask, send_from_directory, request
 import os
-
+import numpy as np
+from PIL import Image
 from recommendation.feature_extractor import FeatureExtractor
+from datetime import datetime
+from pathlib import Path
 
 # Initialize Flask app
-app = Flask(__name__, static_folder='../frontend/dist', static_url_path='/')
+app = Flask(__name__, static_folder='../Frontend/dist', static_url_path='')
 
-# Initialize FeatureExtractor
-fe = FeatureExtractor()
-
-# Read precomputed features
-features = []
-img_paths = []
-feature_dir = Path("./static/feature")
-img_dir = Path("./static/img")
-
-for feature_path in feature_dir.glob("*.npy"):
-    features.append(np.load(feature_path))
-    img_paths.append(img_dir / (feature_path.stem + ".jpg"))
-features = np.array(features)
-
-# Routes
+# Static file routing for frontend
 @app.route('/')
 def home():
     return send_from_directory(app.static_folder, 'index.html')
 
-@app.route('/model', methods=['POST'])
+@app.route('/modelPage')
 def model():
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/<path:path>')
+def static_files(path):
+    return send_from_directory(app.static_folder, path)
+
+# Route to serve files from `uploaded` folder
+@app.route('/recommendation/static/uploaded/<path:filename>')
+def serve_uploaded(filename):
+    return send_from_directory('recommendation/static/uploaded', filename)
+
+# Route to serve files from `img` folder
+@app.route('/recommendation/static/img/<path:filename>')
+def serve_img(filename):
+    return send_from_directory('recommendation/static/img', filename)
+
+# Recommendation system logic
+fe = FeatureExtractor()
+features = []
+img_paths = []
+for feature_path in Path("./recommendation/static/feature").glob("*.npy"):
+    features.append(np.load(feature_path))
+    img_paths.append(Path("./recommendation/static/img") / (feature_path.stem + ".jpg"))
+features = np.array(features)
+
+@app.route('/api/recommend', methods=['POST'])
+def recommend():
     if 'query_img' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
+        return {"error": "No image uploaded"}, 400
 
     file = request.files['query_img']
-    img = Image.open(file.stream)
 
     # Save query image
-    uploaded_img_path = f"./static/uploaded/{datetime.now().isoformat().replace(':', '.')}_{file.filename}"
+    img = Image.open(file.stream)
+    uploaded_img_path = f"recommendation/static/uploaded/{datetime.now().isoformat().replace(':', '.')}_{file.filename}"
     img.save(uploaded_img_path)
 
-    # Extract features from the uploaded image
-    query_features = fe.extract(img)
-
-    # Calculate distances and retrieve top 10 matches
-    dists = np.linalg.norm(features - query_features, axis=1)
-    ids = np.argsort(dists)[:10]
-    results = [
-        {"score": float(dists[id]), "path": str(img_paths[id])}
+    # Extract features and find recommendations
+    query = fe.extract(img)
+    dists = np.linalg.norm(features - query, axis=1)
+    ids = np.argsort(dists)[:6]
+    scores = [
+        {
+            "score": float(dists[id]),
+            "path": f"/recommendation/static/img/{img_paths[id].name}"
+        }
         for id in ids
     ]
 
-    return jsonify({
-        "query_path": uploaded_img_path,
-        "results": results
-    })
+    return {
+        "query_path": f"/recommendation/static/uploaded/{os.path.basename(uploaded_img_path)}",
+        "results": scores
+    }
 
-@app.route('/<path:path>')
-def serve_static(path):
-    return send_from_directory(app.static_folder, path)
-
-# Offline feature extraction endpoint (optional)
-@app.route('/extract-features', methods=['POST'])
-def extract_features():
-    if not os.path.exists(feature_dir):
-        os.makedirs(feature_dir)
-    for img_path in img_dir.glob("*.jpg"):
-        feature = fe.extract(img=Image.open(img_path))
-        feature_path = feature_dir / (img_path.stem + ".npy")
-        np.save(feature_path, feature)
-    return jsonify({"message": "Features extracted successfully!"})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
